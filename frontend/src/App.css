@@ -1,0 +1,11 @@
+function App() {
+  return (
+    <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'sans-serif' }}>
+      <h1>¡Hola! Mi primera app con React funciona 🚀</h1>
+      <p>Edita el archivo src/App.jsx para ver cambios en tiempo real.</p>
+    </div>
+  );
+}
+
+export default App;
+  
