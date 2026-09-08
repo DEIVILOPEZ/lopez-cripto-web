@@ -1,22 +1,75 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
   const [monto, setMonto] = useState(1000);
   const [cripto, setCripto] = useState('USDT');
   const [operacion, setOperacion] = useState('compra');
+  const [criptos, setCriptos] = useState([]);
+  const [cargando, setCargando] = useState(true);
 
-  const criptos = [
-    { simbolo: 'BTC', nombre: 'Bitcoin', icono: '🟧', compra: 64200.00, venta: 65100.00 },
-    { simbolo: 'ETH', nombre: 'Ethereum', icono: '🔷', compra: 3450.00, venta: 3520.00 },
-    { simbolo: 'USDT', nombre: 'Tether', icono: '🟢', compra: 3.72, venta: 3.76 },
-    { simbolo: 'BNB', nombre: 'Binance Coin', icono: '🟨', compra: 580.00, venta: 595.00 },
-    { simbolo: 'USDC', nombre: 'USD Coin', icono: '🔵', compra: 3.71, venta: 3.75 },
+  // Lista de pares que consultaremos en Binance
+  const paresBinance = [
+    { simbolo: 'BTC', par: 'BTCUSDT', nombre: 'Bitcoin', icono: '🟧' },
+    { simbolo: 'ETH', par: 'ETHUSDT', nombre: 'Ethereum', icono: '🔷' },
+    { simbolo: 'BNB', par: 'BNBUSDT', nombre: 'Binance Coin', icono: '🟨' },
+    { simbolo: 'USDC', par: 'USDCUSDT', nombre: 'USD Coin', icono: '🔵' },
+    { simbolo: 'USDT', par: 'USDTUSD', nombre: 'Tether', icono: '🟢' }
   ];
 
-  const seleccionada = criptos.find(c => c.simbolo === cripto) || criptos[2];
-  const precioTasa = operacion === 'compra' ? seleccionada.venta : seleccionada.compra;
-  const resultado = (monto / precioTasa).toFixed(4);
+  useEffect(() => {
+    const obtenerPreciosBinance = async () => {
+      try {
+        // Consulta directa a la API pública de Binance Spot
+        const res = await fetch('https://api.binance.com/api/v3/ticker/price');
+        const data = await res.json();
+
+        // Mapeamos los precios de Binance
+        const listaActualizada = paresBinance.map((item) => {
+          let precioBase = 1;
+
+          if (item.simbolo === 'USDT') {
+            precioBase = 1.0; 
+          } else {
+            const coinData = data.find((d) => d.symbol === item.par);
+            precioBase = coinData ? parseFloat(coinData.price) : 0;
+          }
+
+          // Aplicamos un margen de compra/venta personalizado (ej. 0.5%)
+          return {
+            simbolo: item.simbolo,
+            nombre: item.nombre,
+            icono: item.icono,
+            compra: +(precioBase * 0.995).toFixed(2),
+            venta: +(precioBase * 1.005).toFixed(2)
+          };
+        });
+
+        setCriptos(listaActualizada);
+        setCargando(false);
+      } catch (error) {
+        console.error("Error consultando la API de Binance:", error);
+        setCargando(false);
+      }
+    };
+
+    obtenerPreciosBinance();
+    // Actualiza precios cada 10 segundos
+    const intervalo = setInterval(obtenerPreciosBinance, 10000);
+    return () => clearInterval(intervalo);
+  }, []);
+
+  const seleccionada = criptos.find(c => c.simbolo === cripto) || criptos[0];
+  const precioTasa = seleccionada ? (operacion === 'compra' ? seleccionada.venta : seleccionada.compra) : 1;
+  const resultado = seleccionada ? (monto / precioTasa).toFixed(4) : '0.0000';
+
+  if (cargando) {
+    return (
+      <div style={{ backgroundColor: '#0d0f12', color: '#d4af37', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <h2>Conectando con Binance API...</h2>
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: '#0d0f12', color: '#ffffff', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
@@ -27,7 +80,7 @@ function App() {
           <img 
             src="/logo.jpg" 
             alt="López Cripto Logo" 
-            onError={(e) => { e.target.src = '/logo.png'; }} // Intenta PNG si la extensión no es JPG
+            onError={(e) => { e.target.src = '/logo.png'; }}
             style={{ height: '50px', borderRadius: '8px', border: '1px solid #d4af37' }} 
           />
           <div>
@@ -36,8 +89,8 @@ function App() {
           </div>
         </div>
 
-        <div style={{ color: '#28a745', fontWeight: 'bold', fontSize: '0.9rem' }}>
-          🔒 Tu confianza, nuestra prioridad
+        <div style={{ color: '#f3ba2f', fontWeight: 'bold', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>🔶</span> Binance Live Prices
         </div>
       </header>
 
@@ -47,7 +100,7 @@ function App() {
         {/* COTIZACIONES */}
         <section style={{ backgroundColor: '#14181d', padding: '20px', borderRadius: '12px', border: '1px solid #2a2e35' }}>
           <h2 style={{ color: '#d4af37', fontSize: '1.2rem', marginTop: 0, borderBottom: '1px solid #2a2e35', paddingBottom: '10px' }}>
-            Cotizaciones en Tiempo Real
+            Cotizaciones Binance (USDT)
           </h2>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
@@ -96,7 +149,7 @@ function App() {
           </div>
 
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>Monto a enviar:</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>Monto USDT/USD:</label>
             <input 
               type="number" 
               value={monto} 
@@ -118,7 +171,7 @@ function App() {
           <div style={{ backgroundColor: '#0d0f12', padding: '15px', borderRadius: '8px', textAlign: 'center', margin: '20px 0', border: '1px solid #2a2e35' }}>
             <span style={{ fontSize: '0.8rem', color: '#aaa' }}>Recibes estimadamente:</span>
             <div style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#d4af37', marginTop: '5px' }}>
-              {resultado} {seleccionada.simbolo}
+              {resultado} {seleccionada?.simbolo}
             </div>
           </div>
 
