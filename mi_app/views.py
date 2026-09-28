@@ -1,4 +1,12 @@
-from django.http import HttpResponse
+from django.http import JsonResponse
 
-def inicio(request):
-    return HttpResponse("<h1>¡Bienvenido a mi aplicación Django!</h1>")
+def lopez_cripto(request):
+    data = {
+        "status": "success",
+        "app_name": "LÓPEZ CRIPTO",
+        "saldos": {
+            "pen": "1,250.00",
+            "usd": "340.50"
+        }
+    }
+    return JsonResponse(data)

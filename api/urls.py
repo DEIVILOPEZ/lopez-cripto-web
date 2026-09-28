@@ -1,11 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import CategoriaViewSet, ProductoViewSet
-
-router = DefaultRouter()
-router.register(r'categorias', CategoriaViewSet)
-router.register(r'productos', ProductoViewSet)
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # TUS RUTAS ANTERIORES (ejemplo si tenías vistas previas):
+    # path('', views.mi_vista_anterior, name='home'),
+
+    # RUTA DE AUTENTICACIÓN
+    path('auth/', views.auth_user, name='auth_user'),
 ]
